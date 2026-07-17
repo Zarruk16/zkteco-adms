@@ -1,0 +1,256 @@
+:root {
+  --bg: #f3f1ec;
+  --ink: #1c1a16;
+  --muted: #6a645a;
+  --line: #d8d2c6;
+  --panel: #fffcf7;
+  --accent: #0f5c4c;
+  --accent-ink: #f7fffc;
+  --shadow: 0 10px 30px rgba(28, 26, 22, 0.06);
+  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at top left, rgba(15, 92, 76, 0.08), transparent 40%),
+    linear-gradient(180deg, #efece4 0%, var(--bg) 40%, #ebe7df 100%);
+  min-height: 100vh;
+}
+
+.wrap {
+  width: min(1100px, calc(100% - 2rem));
+  margin: 2rem auto 3rem;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-end;
+  margin-bottom: 1.25rem;
+}
+
+h1 {
+  margin: 0;
+  font-family: "Fraunces", "Iowan Old Style", Georgia, serif;
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  letter-spacing: -0.03em;
+}
+
+.sub {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+}
+
+.header-actions {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.75rem;
+  padding: 1rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  margin-bottom: 1rem;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+input {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.65rem 0.75rem;
+  font: inherit;
+  color: var(--ink);
+  background: #fff;
+}
+
+.btn {
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 0.7rem 1rem;
+  font: inherit;
+  cursor: pointer;
+  align-self: end;
+}
+
+.btn:hover {
+  border-color: #b9b1a2;
+}
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+.hint {
+  color: var(--muted);
+  margin: 0 0 0.35rem;
+  font-size: 0.9rem;
+}
+
+.meta {
+  color: var(--muted);
+  margin: 0 0 0.75rem;
+}
+
+.table-wrap {
+  overflow: auto;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+}
+
+.table-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.85rem 1rem;
+  border-top: 1px solid var(--line);
+  background: rgba(28, 26, 22, 0.03);
+}
+
+.page-size {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.page-size select {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.45rem 0.65rem;
+  font: inherit;
+  color: var(--ink);
+  background: #fff;
+  min-width: 4.5rem;
+}
+
+.pager {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.page-info {
+  font-size: 0.85rem;
+  color: var(--muted);
+  min-width: 10rem;
+  text-align: center;
+}
+
+.btn-pager {
+  align-self: center;
+  padding: 0.5rem 0.9rem;
+}
+
+.btn-pager:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 720px;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+th {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  background: rgba(28, 26, 22, 0.03);
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.empty {
+  color: var(--muted);
+  text-align: center;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  border: 1px solid var(--line);
+  background: #fff;
+}
+
+.badge-ok {
+  border-color: rgba(15, 92, 76, 0.35);
+  background: rgba(15, 92, 76, 0.1);
+  color: var(--accent);
+}
+
+.badge-in {
+  border-color: rgba(160, 110, 30, 0.35);
+  background: rgba(160, 110, 30, 0.12);
+  color: #8a5a12;
+}
+
+.row-live {
+  animation: flash-in 1.2s ease;
+}
+
+@keyframes flash-in {
+  from {
+    background: rgba(15, 92, 76, 0.18);
+  }
+  to {
+    background: transparent;
+  }
+}
+
+@media (max-width: 860px) {
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filters {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .filters .btn {
+    grid-column: 1 / -1;
+  }
+}

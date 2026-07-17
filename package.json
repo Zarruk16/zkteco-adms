@@ -1,0 +1,22 @@
+{
+  "name": "zkteco-adms",
+  "version": "1.0.0",
+  "description": "ZKTeco K20 Pro ADMS attendance server with live web UI",
+  "main": "server.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "better-sqlite3": "^12.11.1",
+    "express": "^5.2.1",
+    "pg": "^8.16.3"
+  }
+}
