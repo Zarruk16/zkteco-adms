@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#123f36" />
+    <title>Sign in · Workforce Attendance</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css?v=20260717-3" />
+  </head>
+  <body class="auth-body">
+    <main class="auth-layout">
+      <section class="auth-visual" aria-hidden="true">
+        <div class="auth-brand">
+          <span class="brand-mark">WA</span>
+          <span>Workforce Attendance</span>
+        </div>
+        <div class="auth-message">
+          <p class="eyebrow light">Organization operations</p>
+          <h1>Attendance clarity for your entire workplace.</h1>
+          <p>Monitor arrivals, departures, lateness and daily workforce presence from any device.</p>
+        </div>
+        <div class="auth-features">
+          <span>Live biometric sync</span>
+          <span>Mobile ready</span>
+          <span>Secure manager access</span>
+        </div>
+      </section>
+
+      <section class="auth-panel">
+        <div class="auth-card">
+          <div class="mobile-auth-brand">
+            <span class="brand-mark">WA</span>
+            <span>Workforce Attendance</span>
+          </div>
+          <p class="eyebrow">Manager portal</p>
+          <h2>Welcome back</h2>
+          <p class="sub">Sign in to manage your organization’s attendance.</p>
+          <form id="loginForm" class="auth-form">
+            <label>
+              Username
+              <input type="text" id="username" name="username" autocomplete="username" placeholder="Enter username" required autofocus />
+            </label>
+            <label>
+              Password
+              <input type="password" id="password" name="password" autocomplete="current-password" placeholder="Enter password" required />
+            </label>
+            <p id="loginError" class="form-error" hidden></p>
+            <button type="submit" class="btn btn-primary btn-block btn-lg" id="loginBtn">Sign in</button>
+          </form>
+          <p class="auth-footnote">Authorized organization managers only</p>
+        </div>
+      </section>
+    </main>
+    <script src="/login.js?v=20260717-3"></script>
+  </body>
+</html>

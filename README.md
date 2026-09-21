@@ -54,6 +54,17 @@ The device must have internet (not guest Wi‑Fi that blocks outbound traffic). 
 - **UI works, no punches:** device may not reach Railway; check firewall or try a custom domain later.
 - **Postgres SSL errors:** Railway sets `DATABASE_URL` with SSL; the app enables SSL by default.
 
+## Organization manager login
+
+Open `/login` (or `/` — redirects if signed out).
+
+Default credentials (override in production):
+
+- Username: `admin`
+- Password: `Admin@2026!`
+
+After login you get the **Organization Dashboard** (`/`) and **Attendance** records (`/attendance`). Device ADMS endpoints (`/iclock/*`) stay open without login.
+
 ## Environment variables
 
 | Variable | Required | Description |
@@ -61,6 +72,14 @@ The device must have internet (not guest Wi‑Fi that blocks outbound traffic). 
 | `PORT` | Railway sets this | HTTP port (default `8080` locally) |
 | `DATABASE_URL` | Railway / Postgres | Use Postgres in production; omit for local SQLite |
 | `PGSSLMODE` | Optional | Set to `disable` only for local Postgres without SSL |
+| `DEVICE_TZ` | Optional | Timezone the device clock uses for punches (default `UTC`) |
+| `DISPLAY_TZ` | Optional | Timezone for UI/CSV times (default `Africa/Lagos`) |
+| `LATE_AFTER` | Optional | Late threshold `HH:MM` in display timezone (default `09:00`) |
+| `SESSION_SECRET` | Optional | Cookie signing secret |
+| `MANAGER_PASSWORD` | Optional | Manager login password (default `Admin@2026!`) |
+| `MANAGER_USERNAME` | Optional | Manager login username (default `admin`) |
+
+If check-in times are an hour behind your PC (common when the device/server is on UTC and you are in Nigeria), keep `DEVICE_TZ=UTC` and `DISPLAY_TZ=Africa/Lagos`. If the device menu time already matches your PC, set both to the same value (e.g. `Africa/Lagos`).
 
 ## API
 

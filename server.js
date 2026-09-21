@@ -11,9 +11,23 @@ const {
   setStamps,
   getLatestPunchedAt,
   getLatestReceivedAt,
+  getDashboardStats,
   dbPath,
   usePostgres,
+  DEVICE_TZ,
+  DISPLAY_TZ,
 } = require("./db");
+const {
+  MANAGER_USERNAME,
+  createSessionToken,
+  getSession,
+  setSessionCookie,
+  clearSessionCookie,
+  validateCredentials,
+  requireAuthApi,
+  requireAuthPage,
+} = require("./auth");
+const { getSettings, updateSettings } = require("./settings");
 
 const app = express();
 const PORT = Number(process.env.PORT) || 8080;
@@ -43,9 +57,80 @@ function broadcastLive(event, payload = {}) {
   }
 }
 
-app.use(express.text({ type: "*/*", limit: "10mb" }));
+// JSON/urlencoded for manager APIs; raw text only for device ADMS posts.
+app.use(express.json({ limit: "100kb" }));
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, "public")));
+app.use((req, res, next) => {
+  if (req.path.startsWith("/api/") && !req.path.startsWith("/api/iclock")) {
+    return next();
+  }
+  return express.text({ type: "*/*", limit: "10mb" })(req, res, next);
+});
+
+const publicDir = path.join(__dirname, "public");
+app.use(express.static(publicDir, { index: false, maxAge: "5m", etag: true }));
+
+app.get("/login", (req, res) => {
+  if (getSession(req)) {
+    res.redirect("/");
+    return;
+  }
+  res.sendFile(path.join(publicDir, "login.html"));
+});
+
+app.get("/", requireAuthPage, (req, res) => {
+  res.sendFile(path.join(publicDir, "app.html"));
+});
+
+app.get("/attendance", requireAuthPage, (req, res) => {
+  res.sendFile(path.join(publicDir, "app.html"));
+});
+
+app.get("/settings", requireAuthPage, (req, res) => {
+  res.sendFile(path.join(publicDir, "app.html"));
+});
+
+app.post("/api/login", (req, res) => {
+  const username = String(req.body?.username || "").trim();
+  const password = String(req.body?.password || "");
+  if (!validateCredentials(username, password)) {
+    res.status(401).json({ error: "Invalid username or password" });
+    return;
+  }
+  setSessionCookie(res, createSessionToken(username));
+  res.json({ success: true, user: { username } });
+});
+
+app.post("/api/logout", (req, res) => {
+  clearSessionCookie(res);
+  res.json({ success: true });
+});
+
+app.get("/api/me", (req, res) => {
+  const session = getSession(req);
+  if (!session) {
+    res.status(401).json({ error: "Authentication required" });
+    return;
+  }
+  res.json({ user: session });
+});
+
+app.get("/api/settings", requireAuthApi, (req, res) => {
+  res.json(getSettings());
+});
+
+app.put("/api/settings", requireAuthApi, (req, res) => {
+  try {
+    const updated = updateSettings({
+      work_hours: req.body?.work_hours || req.body,
+    });
+    broadcastLive("settings", { work_hours: updated.work_hours });
+    res.json(updated);
+  } catch (error) {
+    const status = error.statusCode || 500;
+    res.status(status).json({ error: error.message || "Failed to save settings" });
+  }
+});
 
 const STATUS_LABELS = {
   0: "Check-in",
@@ -343,7 +428,7 @@ app.post("/iclock/devicecmd", (req, res) => {
   plain(res, "OK");
 });
 
-app.post("/api/sync-users", (req, res) => {
+app.post("/api/sync-users", requireAuthApi, (req, res) => {
   const sn = req.query.sn || req.body?.sn;
   if (!sn) {
     res.status(400).json({ error: "Provide ?sn=DEVICE_SERIAL" });
@@ -362,7 +447,7 @@ app.post("/api/sync-users", (req, res) => {
 
 // --- Attendance API ---
 
-app.get("/api/events", (req, res) => {
+app.get("/api/events", requireAuthApi, (req, res) => {
   res.set({
     "Content-Type": "text/event-stream",
     "Cache-Control": "no-cache",
@@ -404,7 +489,17 @@ function attendanceFilters(query) {
 }
 
 app.get(
+  "/api/dashboard",
+  requireAuthApi,
+  asyncRoute(async (req, res) => {
+    const data = await getDashboardStats();
+    res.json(data);
+  })
+);
+
+app.get(
   "/api/attendance",
+  requireAuthApi,
   asyncRoute(async (req, res) => {
     const filters = attendanceFilters(req.query);
     const result = await getDailyAttendance(filters);
@@ -421,6 +516,7 @@ app.get(
 
 app.get(
   "/api/attendance/raw",
+  requireAuthApi,
   asyncRoute(async (req, res) => {
     const result = await getAttendance(attendanceFilters(req.query));
     res.json({
@@ -436,6 +532,7 @@ app.get(
 
 app.get(
   "/api/attendance.csv",
+  requireAuthApi,
   asyncRoute(async (req, res) => {
     const result = await getDailyAttendance({
       ...attendanceFilters(req.query),
@@ -496,6 +593,8 @@ async function start() {
     console.log(`UI: http://127.0.0.1:${PORT}/`);
     console.log(`Live updates: http://127.0.0.1:${PORT}/api/events`);
     console.log(`Database: ${usePostgres ? "Postgres (DATABASE_URL)" : `SQLite ${dbPath}`}`);
+    console.log(`Timezone: device=${DEVICE_TZ} → display=${DISPLAY_TZ}`);
+    console.log(`Manager login user: ${MANAGER_USERNAME}`);
   });
 }
 

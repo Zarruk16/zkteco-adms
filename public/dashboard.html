@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#123f36" />
+    <title>Dashboard · Workforce Attendance</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body class="app-body">
+    <div class="app-shell">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="/">
+          <span class="brand-mark">WA</span>
+          <span class="brand-copy"><strong>Workforce</strong><small>Attendance</small></span>
+        </a>
+        <nav class="side-nav" aria-label="Primary navigation">
+          <p class="nav-label">Workspace</p>
+          <a href="/" class="nav-item active" aria-current="page">
+            <span class="nav-icon">⌂</span><span>Dashboard</span>
+          </a>
+          <a href="/attendance" class="nav-item">
+            <span class="nav-icon">✓</span><span>Attendance</span>
+          </a>
+        </nav>
+        <div class="sidebar-foot">
+          <div class="manager-avatar" data-manager-avatar></div>
+          <div class="manager-copy"><strong data-manager-name></strong><small>Organization manager</small></div>
+          <button class="icon-btn" data-logout title="Log out" aria-label="Log out">↪</button>
+        </div>
+      </aside>
+      <button class="nav-overlay" id="navOverlay" aria-label="Close menu"></button>
+
+      <main class="main-content">
+        <header class="mobile-header">
+          <button class="icon-btn menu-btn" id="menuButton" aria-label="Open menu" aria-expanded="false">☰</button>
+          <a class="mobile-brand" href="/"><span class="brand-mark small">WA</span><strong>Attendance</strong></a>
+          <div class="manager-avatar small" data-manager-avatar></div>
+        </header>
+
+        <div class="page-wrap">
+          <header class="page-header">
+            <div>
+              <p class="eyebrow">Organization overview</p>
+              <h1>Good day, <span data-manager-name></span></h1>
+              <p class="sub" id="dashSub">Loading today’s attendance overview…</p>
+            </div>
+            <div class="page-actions">
+              <button type="button" id="refreshBtn" class="btn btn-secondary"><span>↻</span> Refresh</button>
+              <a class="btn btn-primary" href="/attendance">View records</a>
+            </div>
+          </header>
+
+          <section class="schedule-banner">
+            <div class="schedule-icon">◷</div>
+            <div><strong>Standard working day</strong><span id="scheduleText">8:00 AM – 5:00 PM</span></div>
+            <div class="schedule-rule"><small>Grace period</small><strong>Until 9:00 AM</strong></div>
+            <div class="schedule-rule"><small>Early departure</small><strong>Before 4:00 PM</strong></div>
+          </section>
+
+          <section class="metrics" aria-label="Today’s attendance metrics">
+            <article class="metric metric-present"><div class="metric-icon">✓</div><div><p class="metric-label">Present today</p><p class="metric-value" id="mPresent">—</p></div></article>
+            <article class="metric"><div class="metric-icon">◉</div><div><p class="metric-label">Still checked in</p><p class="metric-value" id="mStill">—</p></div></article>
+            <article class="metric"><div class="metric-icon">↔</div><div><p class="metric-label">Completed day</p><p class="metric-value" id="mDone">—</p></div></article>
+            <article class="metric metric-warning"><div class="metric-icon">!</div><div><p class="metric-label">Late arrivals</p><p class="metric-value" id="mLate">—</p></div></article>
+            <article class="metric metric-early"><div class="metric-icon">↗</div><div><p class="metric-label">Left early</p><p class="metric-value" id="mEarly">—</p></div></article>
+            <article class="metric"><div class="metric-icon">—</div><div><p class="metric-label">No punch yet</p><p class="metric-value" id="mAbsent">—</p></div></article>
+          </section>
+
+          <section class="content-grid">
+            <article class="panel attendance-panel">
+              <div class="panel-head">
+                <div><h2>Today’s workforce</h2><p class="sub" id="peopleSub">Live biometric attendance</p></div>
+                <span class="live-pill"><i></i> Live</span>
+              </div>
+              <div class="table-wrap flat responsive-table">
+                <table>
+                  <thead><tr><th>User</th><th>Check-in</th><th>Check-out</th><th>Status</th></tr></thead>
+                  <tbody id="peopleRows"><tr><td class="empty" colspan="4">Loading…</td></tr></tbody>
+                </table>
+              </div>
+              <div class="panel-footer"><a href="/attendance">View all attendance records →</a></div>
+            </article>
+
+            <aside class="panel summary-panel">
+              <div class="panel-head"><div><h2>Today at a glance</h2><p class="sub">Workforce movement</p></div></div>
+              <div class="summary-list">
+                <div><span class="summary-dot present"></span><p><strong id="sPresent">—</strong><small>People present</small></p></div>
+                <div><span class="summary-dot late"></span><p><strong id="sLate">—</strong><small>Arrived after 9:00 AM</small></p></div>
+                <div><span class="summary-dot early"></span><p><strong id="sEarly">—</strong><small>Left before 4:00 PM</small></p></div>
+                <div><span class="summary-dot absent"></span><p><strong id="sAbsent">—</strong><small>No attendance yet</small></p></div>
+              </div>
+              <div class="manager-note"><strong>Manager access</strong><p>You’re viewing organization-wide attendance data.</p></div>
+            </aside>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <nav class="mobile-bottom-nav" aria-label="Mobile navigation">
+      <a href="/" class="active"><span>⌂</span><small>Dashboard</small></a>
+      <a href="/attendance"><span>✓</span><small>Attendance</small></a>
+      <button data-logout><span>↪</span><small>Log out</small></button>
+    </nav>
+    <script src="/shell.js"></script>
+    <script src="/dashboard.js"></script>
+  </body>
+</html>

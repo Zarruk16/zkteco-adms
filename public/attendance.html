@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#123f36" />
+    <title>Attendance · Workforce Attendance</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body class="app-body">
+    <div class="app-shell">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="/"><span class="brand-mark">WA</span><span class="brand-copy"><strong>Workforce</strong><small>Attendance</small></span></a>
+        <nav class="side-nav" aria-label="Primary navigation">
+          <p class="nav-label">Workspace</p>
+          <a href="/" class="nav-item"><span class="nav-icon">⌂</span><span>Dashboard</span></a>
+          <a href="/attendance" class="nav-item active" aria-current="page"><span class="nav-icon">✓</span><span>Attendance</span></a>
+        </nav>
+        <div class="sidebar-foot">
+          <div class="manager-avatar" data-manager-avatar></div>
+          <div class="manager-copy"><strong data-manager-name></strong><small>Organization manager</small></div>
+          <button class="icon-btn" data-logout title="Log out" aria-label="Log out">↪</button>
+        </div>
+      </aside>
+      <button class="nav-overlay" id="navOverlay" aria-label="Close menu"></button>
+
+      <main class="main-content">
+        <header class="mobile-header">
+          <button class="icon-btn menu-btn" id="menuButton" aria-label="Open menu" aria-expanded="false">☰</button>
+          <a class="mobile-brand" href="/"><span class="brand-mark small">WA</span><strong>Attendance</strong></a>
+          <div class="manager-avatar small" data-manager-avatar></div>
+        </header>
+
+        <div class="page-wrap">
+          <header class="page-header">
+            <div><p class="eyebrow">Organization records</p><h1>Attendance</h1><p class="sub">Review daily arrival and departure records for everyone.</p></div>
+            <div class="page-actions">
+              <button type="button" id="syncUsersBtn" class="btn btn-secondary">Sync names</button>
+              <button type="button" id="refreshBtn" class="btn btn-secondary">↻ Refresh</button>
+              <button type="button" id="exportBtn" class="btn btn-primary">Export CSV</button>
+            </div>
+          </header>
+
+          <section class="filter-panel">
+            <div class="filter-title"><div><h2>Filter records</h2><p>Find attendance by date, user or device.</p></div><button type="button" id="toggleFilters" class="icon-btn filter-toggle" aria-expanded="true">⌃</button></div>
+            <form id="filters" class="filters">
+              <label>From<input type="date" id="from" name="from" /></label>
+              <label>To<input type="date" id="to" name="to" /></label>
+              <label>User ID<input type="text" id="pin" name="pin" inputmode="numeric" placeholder="e.g. 1001" /></label>
+              <label>Device SN<input type="text" id="sn" name="sn" placeholder="Optional" /></label>
+              <div class="filter-actions"><button type="submit" class="btn btn-primary">Apply filters</button><button type="button" id="latestBtn" class="btn btn-secondary">Latest day</button><button type="button" id="clearBtn" class="btn btn-ghost">Clear</button></div>
+            </form>
+          </section>
+
+          <section class="panel records-panel">
+            <div class="panel-head"><div><h2>Attendance records</h2><p class="sub">Times shown in Africa/Lagos</p></div><span class="live-pill"><i></i> Live sync</span></div>
+            <div class="table-wrap flat responsive-table attendance-table">
+              <table>
+                <thead><tr><th>Users</th><th>Clock in</th><th>Clock out</th><th>Date</th><th>Punches</th><th>Status</th></tr></thead>
+                <tbody id="rows"><tr><td class="empty" colspan="6">No data yet</td></tr></tbody>
+              </table>
+            </div>
+            <div class="table-toolbar">
+              <label class="page-size">Show<select id="pageSize"><option value="10">10</option><option value="15" selected>15</option><option value="20">20</option><option value="25">25</option><option value="50">50</option></select></label>
+              <div class="pager" id="pager"><button type="button" id="prevPage" class="btn btn-pager" disabled>Previous</button><span id="pageInfo" class="page-info">—</span><button type="button" id="nextPage" class="btn btn-pager" disabled>Next</button></div>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <nav class="mobile-bottom-nav" aria-label="Mobile navigation">
+      <a href="/"><span>⌂</span><small>Dashboard</small></a>
+      <a href="/attendance" class="active"><span>✓</span><small>Attendance</small></a>
+      <button data-logout><span>↪</span><small>Log out</small></button>
+    </nav>
+    <script src="/shell.js"></script>
+    <script src="/attendance.js"></script>
+  </body>
+</html>

@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#123f36" />
+    <title>Workforce Attendance</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css?v=20260730-1" />
+  </head>
+  <body class="app-body">
+    <div class="app-shell">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="/" data-route="dashboard"><span class="brand-mark">WA</span><span class="brand-copy"><strong>Workforce</strong><small>Attendance</small></span></a>
+        <nav class="side-nav" aria-label="Primary navigation">
+          <p class="nav-label">Workspace</p>
+          <a href="/" class="nav-item" data-route="dashboard"><span class="nav-icon">⌂</span><span>Dashboard</span></a>
+          <a href="/attendance" class="nav-item" data-route="attendance"><span class="nav-icon">✓</span><span>Attendance</span></a>
+          <a href="/settings" class="nav-item" data-route="settings"><span class="nav-icon">⚙</span><span>Settings</span></a>
+        </nav>
+        <div class="sidebar-foot">
+          <div class="manager-avatar" data-manager-avatar></div>
+          <div class="manager-copy"><strong data-manager-name></strong><small>Organization manager</small></div>
+          <button class="icon-btn" data-logout title="Log out" aria-label="Log out">↪</button>
+        </div>
+      </aside>
+      <button class="nav-overlay" id="navOverlay" aria-label="Close menu"></button>
+
+      <main class="main-content">
+        <header class="mobile-header">
+          <button class="icon-btn menu-btn" id="menuButton" aria-label="Open menu" aria-expanded="false">☰</button>
+          <a class="mobile-logo" href="/" data-route="dashboard" aria-label="Dashboard">✓</a>
+        </header>
+
+        <section class="app-view" id="dashboardView" data-view="dashboard">
+          <div class="page-wrap">
+            <header class="page-header">
+              <div><p class="eyebrow">Organization overview</p><h1>Good day, <span data-manager-name></span></h1><p class="sub" id="dashSub">Loading today’s attendance overview…</p></div>
+              <div class="page-actions"><button type="button" id="dashRefreshBtn" class="btn btn-secondary"><span>↻</span> Refresh</button><a class="btn btn-primary" href="/attendance" data-route="attendance">View records</a></div>
+            </header>
+
+            <section class="schedule-banner">
+              <div class="schedule-icon">◷</div><div><strong>Standard working day</strong><span id="scheduleText">8:00 AM – 5:00 PM</span></div>
+              <div class="schedule-rule"><small>Grace period</small><strong id="scheduleGrace">Until 9:00 AM</strong></div>
+              <div class="schedule-rule"><small>Early departure</small><strong id="scheduleEarly">Before 4:00 PM</strong></div>
+            </section>
+
+            <section class="metrics" aria-label="Today’s attendance metrics">
+              <article class="metric metric-present"><div class="metric-icon">✓</div><div><p class="metric-label">Present today</p><p class="metric-value" id="mPresent">—</p></div></article>
+              <article class="metric"><div class="metric-icon">◉</div><div><p class="metric-label">Still checked in</p><p class="metric-value" id="mStill">—</p></div></article>
+              <article class="metric"><div class="metric-icon">↔</div><div><p class="metric-label">Completed day</p><p class="metric-value" id="mDone">—</p></div></article>
+              <article class="metric metric-warning"><div class="metric-icon">!</div><div><p class="metric-label">Late arrivals</p><p class="metric-value" id="mLate">—</p></div></article>
+              <article class="metric metric-early"><div class="metric-icon">↗</div><div><p class="metric-label">Left early</p><p class="metric-value" id="mEarly">—</p></div></article>
+              <article class="metric"><div class="metric-icon">—</div><div><p class="metric-label">No punch yet</p><p class="metric-value" id="mAbsent">—</p></div></article>
+            </section>
+
+            <section class="content-grid">
+              <article class="panel attendance-panel">
+                <div class="panel-head"><div><h2>Today’s workforce</h2><p class="sub" id="peopleSub">Live biometric attendance</p></div><span class="live-pill"><i></i> Live</span></div>
+                <div class="table-wrap flat responsive-table"><table><thead><tr><th>User</th><th>Clock in</th><th>Clock out</th><th>Status</th></tr></thead><tbody id="peopleRows"><tr><td class="empty" colspan="4">Loading…</td></tr></tbody></table></div>
+                <div class="panel-footer"><a href="/attendance" data-route="attendance">View all attendance records →</a></div>
+              </article>
+              <aside class="panel summary-panel">
+                <div class="panel-head"><div><h2>Today at a glance</h2><p class="sub">Workforce movement</p></div></div>
+                <div class="summary-list">
+                  <div><span class="summary-dot present"></span><p><strong id="sPresent">—</strong><small>People present</small></p></div>
+                  <div><span class="summary-dot late"></span><p><strong id="sLate">—</strong><small id="sLateLabel">Arrived after 9:00 AM</small></p></div>
+                  <div><span class="summary-dot early"></span><p><strong id="sEarly">—</strong><small id="sEarlyLabel">Left before 4:00 PM</small></p></div>
+                  <div><span class="summary-dot absent"></span><p><strong id="sAbsent">—</strong><small>No attendance yet</small></p></div>
+                </div>
+                <div class="manager-note"><strong>Manager access</strong><p>You’re viewing organization-wide attendance data.</p></div>
+              </aside>
+            </section>
+
+            <section class="panel history-panel" aria-label="Last 7 days attendance progress">
+              <div class="panel-head">
+                <div>
+                  <h2>Attendance progress · Last 7 days</h2>
+                  <p class="sub" id="historySub">Day-by-day transparency across the week</p>
+                </div>
+                <div class="history-summary" id="historySummaryPills">
+                  <span><strong id="hAvgPresent">—</strong><small>Avg present</small></span>
+                  <span><strong id="hTotalLate">—</strong><small>Late</small></span>
+                  <span><strong id="hTotalEarly">—</strong><small>Left early</small></span>
+                </div>
+              </div>
+              <div class="history-chart" id="historyChart" aria-hidden="true"></div>
+              <div class="table-wrap flat responsive-table">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Present</th>
+                      <th>Late</th>
+                      <th>Left early</th>
+                      <th>Completed</th>
+                      <th>Still in</th>
+                    </tr>
+                  </thead>
+                  <tbody id="historyRows">
+                    <tr><td class="empty" colspan="6">Loading…</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="app-view" id="attendanceView" data-view="attendance" hidden>
+          <div class="page-wrap">
+            <header class="page-header">
+              <div><p class="eyebrow">Organization records</p><h1>Attendance</h1><p class="sub" id="attendanceSub">Showing today’s attendance. Use filters for other days.</p></div>
+              <div class="page-actions"><button type="button" id="syncUsersBtn" class="btn btn-secondary">Sync names</button><button type="button" id="attendanceRefreshBtn" class="btn btn-secondary">↻ Refresh</button><button type="button" id="exportBtn" class="btn btn-primary">Export CSV</button></div>
+            </header>
+
+            <section class="filter-panel">
+              <div class="filter-title"><div><h2>Filter records</h2><p>Other days appear only when you filter by date.</p></div><button type="button" id="toggleFilters" class="icon-btn filter-toggle" aria-expanded="true">⌃</button></div>
+              <form id="filters" class="filters">
+                <label>From<input type="date" id="from" name="from" /></label><label>To<input type="date" id="to" name="to" /></label>
+                <label>User ID<input type="text" id="pin" name="pin" inputmode="numeric" placeholder="e.g. 1001" /></label><label>Device SN<input type="text" id="sn" name="sn" placeholder="Optional" /></label>
+                <div class="filter-actions"><button type="submit" class="btn btn-primary">Apply filters</button><button type="button" id="todayBtn" class="btn btn-secondary">Today</button><button type="button" id="clearBtn" class="btn btn-ghost">Clear</button></div>
+              </form>
+            </section>
+
+            <section class="panel records-panel">
+              <div class="panel-head"><div><h2>Attendance records</h2><p class="sub" id="recordsSub">Today · Africa/Lagos</p></div><span class="live-pill"><i></i> Live sync</span></div>
+              <div class="table-wrap flat responsive-table attendance-table"><table><thead><tr><th>Users</th><th>Clock in</th><th>Clock out</th><th>Date</th><th>Punches</th><th>Status</th></tr></thead><tbody id="rows"><tr><td class="empty" colspan="6">Loading…</td></tr></tbody></table></div>
+              <div class="table-toolbar">
+                <label class="page-size">Show<select id="pageSize"><option value="10">10</option><option value="15" selected>15</option><option value="20">20</option><option value="25">25</option><option value="50">50</option></select></label>
+                <div class="pager" id="pager"><button type="button" id="prevPage" class="btn btn-pager" disabled>Previous</button><span id="pageInfo" class="page-info">—</span><button type="button" id="nextPage" class="btn btn-pager" disabled>Next</button></div>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="app-view" id="settingsView" data-view="settings" hidden>
+          <div class="page-wrap">
+            <header class="page-header">
+              <div>
+                <p class="eyebrow">Organization setup</p>
+                <h1>Settings</h1>
+                <p class="sub">Define the standard working day used for late and early-leave status.</p>
+              </div>
+            </header>
+
+            <section class="panel settings-panel">
+              <div class="panel-head">
+                <div>
+                  <h2>Standard working day</h2>
+                  <p class="sub">Times use the same 24-hour clock shown on attendance records (Africa/Lagos).</p>
+                </div>
+              </div>
+              <form id="settingsForm" class="settings-form">
+                <label>
+                  Work start
+                  <input type="time" id="workStart" name="work_start" required />
+                  <small>Official day start</small>
+                </label>
+                <label>
+                  Late after
+                  <input type="time" id="lateAfter" name="late_after" required />
+                  <small>Arrivals after this count as late</small>
+                </label>
+                <label>
+                  Early leave before
+                  <input type="time" id="earlyLeaveBefore" name="early_leave_before" required />
+                  <small>Departures before this count as left early</small>
+                </label>
+                <label>
+                  Work end
+                  <input type="time" id="workEnd" name="work_end" required />
+                  <small>Official day end</small>
+                </label>
+                <div class="settings-actions">
+                  <p class="settings-status" id="settingsStatus" aria-live="polite"></p>
+                  <button type="submit" id="settingsSaveBtn" class="btn btn-primary">Save working day</button>
+                </div>
+              </form>
+            </section>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div class="modal-backdrop" id="exportModal" hidden>
+      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="exportTitle">
+        <h2 id="exportTitle">Export attendance</h2>
+        <p class="sub">Choose daily, weekly, or monthly records for the CSV download.</p>
+
+        <fieldset class="export-period">
+          <legend>Export period</legend>
+          <label class="export-option">
+            <input type="radio" name="exportPeriod" value="daily" checked />
+            <span>Daily</span>
+          </label>
+          <label class="export-option">
+            <input type="radio" name="exportPeriod" value="weekly" />
+            <span>Weekly</span>
+          </label>
+          <label class="export-option">
+            <input type="radio" name="exportPeriod" value="monthly" />
+            <span>Monthly</span>
+          </label>
+        </fieldset>
+
+        <label id="exportDayWrap">
+          Day
+          <input type="date" id="exportDay" />
+        </label>
+        <label id="exportWeekWrap" hidden>
+          Any day in the week
+          <input type="date" id="exportWeekDay" />
+        </label>
+        <label id="exportMonthWrap" hidden>
+          Month
+          <input type="month" id="exportMonth" />
+        </label>
+
+        <p class="export-range" id="exportRangePreview">—</p>
+
+        <div class="modal-actions">
+          <button type="button" id="exportCancelBtn" class="btn btn-ghost">Cancel</button>
+          <button type="button" id="exportConfirmBtn" class="btn btn-primary">Download CSV</button>
+        </div>
+      </div>
+    </div>
+
+    <nav class="mobile-bottom-nav" aria-label="Mobile navigation">
+      <a href="/" data-route="dashboard">
+        <svg class="nav-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/><rect x="14" y="3" width="7" height="5" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/><rect x="14" y="12" width="7" height="9" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/><rect x="3" y="16" width="7" height="5" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <small>Dashboard</small>
+      </a>
+      <a href="/attendance" data-route="attendance">
+        <svg class="nav-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><rect x="9" y="3" width="6" height="4" rx="1" fill="none" stroke="currentColor" stroke-width="2"/><path d="m9 14 2 2 4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <small>Attendance</small>
+      </a>
+      <a href="/settings" data-route="settings">
+        <svg class="nav-svg" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <small>Settings</small>
+      </a>
+      <button data-logout type="button">
+        <svg class="nav-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="16 17 21 12 16 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="21" y1="12" x2="9" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <small>Log out</small>
+      </button>
+    </nav>
+    <script src="/shell.js?v=20260730-1"></script>
+    <script src="/app-ui.js?v=20260730-1"></script>
+  </body>
+</html>

@@ -46,6 +46,13 @@ Restart=always
 RestartSec=3
 Environment=PORT=8080
 Environment=NODE_ENV=production
+EnvironmentFile=/home/ubuntu/zkteco-adms/.env
+Environment=DEVICE_TZ=UTC
+Environment=DISPLAY_TZ=Africa/Lagos
+Environment=WORK_START=08:00
+Environment=LATE_AFTER=09:00
+Environment=EARLY_LEAVE_BEFORE=16:00
+Environment=WORK_END=17:00
 
 [Install]
 WantedBy=multi-user.target

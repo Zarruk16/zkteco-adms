@@ -1,5 +1,6 @@
 const fs = require("fs");
 const path = require("path");
+const { getWorkHours } = require("./settings");
 
 const usePostgres = Boolean(process.env.DATABASE_URL);
 const dataDir = path.join(__dirname, "data");
@@ -8,18 +9,89 @@ const dbPath = path.join(dataDir, "attendance.db");
 let driver = null;
 let db = null;
 
+/** Timezone the biometric device clock is set to (naive punch timestamps). */
+const DEVICE_TZ = process.env.DEVICE_TZ || "UTC";
+/** Timezone used when showing check-in / check-out in the UI & CSV. */
+const DISPLAY_TZ = process.env.DISPLAY_TZ || "Africa/Lagos";
+
+function parseNaiveDateTime(value) {
+  const raw = String(value || "").trim().replace(" ", "T");
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?/);
+  if (!match) return null;
+  return {
+    year: Number(match[1]),
+    month: Number(match[2]),
+    day: Number(match[3]),
+    hour: Number(match[4]),
+    minute: Number(match[5]),
+    second: Number(match[6] || 0),
+  };
+}
+
+function getTimeZoneOffsetMinutes(timeZone, utcDate) {
+  const dtf = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hour12: false,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+  const parts = Object.fromEntries(
+    dtf
+      .formatToParts(utcDate)
+      .filter((p) => p.type !== "literal")
+      .map((p) => [p.type, p.value])
+  );
+  const asUtc = Date.UTC(
+    Number(parts.year),
+    Number(parts.month) - 1,
+    Number(parts.day),
+    Number(parts.hour) % 24,
+    Number(parts.minute),
+    Number(parts.second)
+  );
+  return (asUtc - utcDate.getTime()) / 60000;
+}
+
+/** Treat a naive wall-clock timestamp as belonging to `timeZone`, return UTC Date. */
+function zonedNaiveToUtc(parts, timeZone) {
+  const wallAsUtc = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second);
+  let offset = getTimeZoneOffsetMinutes(timeZone, new Date(wallAsUtc));
+  let utcMs = wallAsUtc - offset * 60000;
+  const offset2 = getTimeZoneOffsetMinutes(timeZone, new Date(utcMs));
+  if (offset2 !== offset) {
+    utcMs = wallAsUtc - offset2 * 60000;
+  }
+  return new Date(utcMs);
+}
+
 function formatTime12Hour(dateTime) {
   if (!dateTime) return null;
-  const match = String(dateTime).match(/(\d{2}):(\d{2})(?::(\d{2}))?/);
-  if (!match) return String(dateTime);
+  const parts = parseNaiveDateTime(dateTime);
+  if (!parts) return String(dateTime);
 
-  let hour = Number(match[1]);
-  const minute = match[2];
-  const second = match[3] || "00";
-  const suffix = hour >= 12 ? "PM" : "AM";
-  hour = hour % 12;
-  if (hour === 0) hour = 12;
-  return `${hour}:${minute}:${second} ${suffix}`;
+  // Same zone → keep original wall clock (no shift).
+  if (DEVICE_TZ === DISPLAY_TZ) {
+    let hour = parts.hour;
+    const suffix = hour >= 12 ? "PM" : "AM";
+    hour = hour % 12;
+    if (hour === 0) hour = 12;
+    const minute = String(parts.minute).padStart(2, "0");
+    const second = String(parts.second).padStart(2, "0");
+    return `${hour}:${minute}:${second} ${suffix}`;
+  }
+
+  const utc = zonedNaiveToUtc(parts, DEVICE_TZ);
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: DISPLAY_TZ,
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  }).format(utc);
 }
 
 function buildDailyWhere({ from, to, pin, sn } = {}) {
@@ -93,12 +165,7 @@ function pairSessions(punches) {
 
 function mapDailyRows(sessions, safeOffset, safeLimit) {
   const total = sessions.length;
-  const rows = sessions.slice(safeOffset, safeOffset + safeLimit).map((row) => ({
-    ...row,
-    check_in_time: formatTime12Hour(row.check_in),
-    check_out_time: formatTime12Hour(row.check_out),
-    status_label: row.check_out ? "Complete" : "Checked in",
-  }));
+  const rows = sessions.slice(safeOffset, safeOffset + safeLimit).map((row) => annotateAttendanceRow(row));
   return { rows, total };
 }
 
@@ -729,7 +796,218 @@ async function getLatestReceivedAt() {
   return requireDriver().getLatestReceivedAt();
 }
 
+function todayInDisplayTz(date = new Date()) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: DISPLAY_TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
+function displayClockMinutes(dateTime) {
+  const parts = parseNaiveDateTime(dateTime);
+  if (!parts) return null;
+  if (DEVICE_TZ === DISPLAY_TZ) {
+    return parts.hour * 60 + parts.minute;
+  }
+  const utc = zonedNaiveToUtc(parts, DEVICE_TZ);
+  const dtf = new Intl.DateTimeFormat("en-GB", {
+    timeZone: DISPLAY_TZ,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  const clock = Object.fromEntries(
+    dtf
+      .formatToParts(utc)
+      .filter((p) => p.type !== "literal")
+      .map((p) => [p.type, p.value])
+  );
+  return Number(clock.hour) * 60 + Number(clock.minute);
+}
+
+/** Working day defaults: 08:00–17:00. Grace until 09:00; early leave before 16:00. */
+function parseHhMmMinutes(value, fallbackMinutes) {
+  const raw = String(value || "").trim();
+  const match = raw.match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return fallbackMinutes;
+  return Number(match[1]) * 60 + Number(match[2]);
+}
+
+function workHoursConfig() {
+  return getWorkHours();
+}
+
+function annotateAttendanceRow(row) {
+  const hours = workHoursConfig();
+  const lateCutoff = parseHhMmMinutes(hours.late_after, 9 * 60);
+  const earlyCutoff = parseHhMmMinutes(hours.early_leave_before, 16 * 60);
+
+  const checkInMins = displayClockMinutes(row.check_in);
+  const checkOutMins = row.check_out ? displayClockMinutes(row.check_out) : null;
+
+  // 08:00–09:00 inclusive is on time; strictly after 09:00 is late.
+  const late = checkInMins != null && checkInMins > lateCutoff;
+  // Leave early only when they have checked out before 16:00.
+  const left_early = checkOutMins != null && checkOutMins < earlyCutoff;
+
+  const tags = [];
+  if (late) tags.push("Late");
+  if (left_early) tags.push("Left early");
+  if (!tags.length) tags.push(row.check_out ? "Complete" : "Checked in");
+
+  return {
+    ...row,
+    check_in_time: formatTime12Hour(row.check_in),
+    check_out_time: formatTime12Hour(row.check_out),
+    late,
+    left_early,
+    status_label: tags.join(" · "),
+  };
+}
+
+function addCalendarDays(ymd, delta) {
+  const [year, month, day] = String(ymd).split("-").map(Number);
+  const dt = new Date(Date.UTC(year, month - 1, day + delta));
+  return dt.toISOString().slice(0, 10);
+}
+
+function lastNDisplayDates(n = 7) {
+  const end = todayInDisplayTz();
+  const dates = [];
+  for (let i = n - 1; i >= 0; i -= 1) {
+    dates.push(addCalendarDays(end, -i));
+  }
+  return dates;
+}
+
+/** First session per user for a day (earliest check-in). */
+function uniquePeopleForDay(rows) {
+  const byUser = new Map();
+  for (const row of rows) {
+    const key = `${row.device_sn}|${row.user_pin}`;
+    const existing = byUser.get(key);
+    if (!existing || String(row.check_in) < String(existing.check_in)) {
+      byUser.set(key, row);
+    }
+  }
+  return [...byUser.values()].sort((a, b) =>
+    String(a.check_in).localeCompare(String(b.check_in))
+  );
+}
+
+function dayMetricsFromPeople(people, named) {
+  let completed = 0;
+  let stillIn = 0;
+  let late = 0;
+  let leftEarly = 0;
+  for (const row of people) {
+    if (row.check_out) completed += 1;
+    else stillIn += 1;
+    if (row.late) late += 1;
+    if (row.left_early) leftEarly += 1;
+  }
+  const present = people.length;
+  return {
+    present,
+    completed,
+    still_in: stillIn,
+    late,
+    left_early: leftEarly,
+    absent_estimate: Math.max(named - present, 0),
+  };
+}
+
+async function getDashboardStats() {
+  const day = todayInDisplayTz();
+  const hours = workHoursConfig();
+  const historyDates = lastNDisplayDates(7);
+  const rangeStart = historyDates[0];
+
+  const range = await getDailyAttendance({
+    from: `${rangeStart} 00:00:00`,
+    to: `${day} 23:59:59`,
+    limit: 5000,
+    offset: 0,
+  });
+
+  const rowsByDate = new Map();
+  for (const date of historyDates) rowsByDate.set(date, []);
+  for (const row of range.rows) {
+    const key = String(row.work_date || "").slice(0, 10);
+    if (!rowsByDate.has(key)) continue;
+    rowsByDate.get(key).push(row);
+  }
+
+  const enrolled = await getUserCount(undefined, { namedOnly: false });
+  const named = await getUserCount(undefined, { namedOnly: true });
+
+  const todayPeople = uniquePeopleForDay(rowsByDate.get(day) || []);
+  const todayMetrics = dayMetricsFromPeople(todayPeople, named);
+
+  const recent = todayPeople.map((row) => ({
+    work_date: row.work_date,
+    user_pin: row.user_pin,
+    user_name: row.user_name || "",
+    check_in: row.check_in,
+    check_out: row.check_out,
+    check_in_time: row.check_in_time,
+    check_out_time: row.check_out_time,
+    punch_count: row.punch_count,
+    status_label: row.status_label,
+    late: Boolean(row.late),
+    left_early: Boolean(row.left_early),
+  }));
+
+  const history = historyDates.map((date) => {
+    const people = uniquePeopleForDay(rowsByDate.get(date) || []);
+    const metrics = dayMetricsFromPeople(people, named);
+    return {
+      date,
+      is_today: date === day,
+      ...metrics,
+    };
+  });
+
+  const daysCovered = history.length;
+  const totalPresent = history.reduce((sum, row) => sum + row.present, 0);
+  const totalLate = history.reduce((sum, row) => sum + row.late, 0);
+  const totalLeftEarly = history.reduce((sum, row) => sum + row.left_early, 0);
+  const totalCompleted = history.reduce((sum, row) => sum + row.completed, 0);
+
+  return {
+    date: day,
+    timezone: DISPLAY_TZ,
+    work_hours: hours,
+    late_after: hours.late_after,
+    early_leave_before: hours.early_leave_before,
+    metrics: {
+      ...todayMetrics,
+      enrolled,
+      named,
+    },
+    people: recent,
+    history,
+    history_summary: {
+      days: daysCovered,
+      from: rangeStart,
+      to: day,
+      avg_present: daysCovered ? Math.round((totalPresent / daysCovered) * 10) / 10 : 0,
+      total_present: totalPresent,
+      total_late: totalLate,
+      total_left_early: totalLeftEarly,
+      total_completed: totalCompleted,
+    },
+    latest_punched_at: await getLatestPunchedAt(),
+    latest_received_at: await getLatestReceivedAt(),
+  };
+}
+
+
 module.exports = {
+  DEVICE_TZ,
+  DISPLAY_TZ,
   db,
   dbPath,
   initDb,
@@ -743,4 +1021,6 @@ module.exports = {
   setStamps,
   getLatestPunchedAt,
   getLatestReceivedAt,
+  getDashboardStats,
+  todayInDisplayTz,
 };
